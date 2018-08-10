@@ -108,10 +108,10 @@ Here's how we'll create, read and update the entities:
     db.CreateTable<Stock>();
     db.CreateTable<Valuation>();
 
-    var euro = new Stock() {
-        Symbol = "€"
+    var dollar = new Stock() {
+        Symbol = "$"
     };
-    db.Insert(euro);   // Insert the object in the database
+    db.Insert(dollar);   // Insert the object in the database
 
     var valuation = new Valuation() {
         Price = 15,
@@ -122,14 +122,14 @@ Here's how we'll create, read and update the entities:
     // Objects created, let's stablish the relationship
     euro.Valuations = new List<Valuation> { valuation };
 
-    db.UpdateWithChildren(euro);   // Update the changes into the database
-    if (valuation.Stock == euro) {
+    db.UpdateWithChildren(dollar);   // Update the changes into the database
+    if (valuation.Stock == dollar) {
         Debug.WriteLine("Inverse relationship already set, yay!");
     }
 
     // Get the object and the relationships
     var storedValuation = db.GetWithChildren<Valuation>(valuation.Id);
-    if (euro.Symbol.Equals(storedValuation.Stock.Symbol)) {
+    if (dollar.Symbol.Equals(storedValuation.Stock.Symbol)) {
         Debug.WriteLine("Object and relationships loaded correctly!");
     }
 
@@ -148,20 +148,20 @@ The complexity of the sample can be reduced using recursive operations, that are
         Time = DateTime.Now,
     };
 
-    var euro = new Stock {
-        Symbol = "€",
+    var dollar = new Stock {
+        Symbol = "$",
         Valuations = new List<Valuation> { valuation }
     };
 
-    db.InsertWithChildren(euro);   // Insert the object in the database
+    db.InsertWithChildren(dollar);   // Insert the object in the database
 
-    if (valuation.Stock == euro) {
+    if (valuation.Stock == dollar) {
         Debug.WriteLine("Inverse relationship already set, yay!");
     }
 
     // Get the object and the relationships
     var storedValuation = db.GetWithChildren<Valuation>(valuation.Id);
-    if (euro.Symbol.Equals(storedValuation.Stock.Symbol)) {
+    if (dollar.Symbol.Equals(storedValuation.Stock.Symbol)) {
         Debug.WriteLine("Object and relationships loaded correctly!");
     }
     
