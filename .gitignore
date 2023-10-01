@@ -6,4 +6,6 @@
 *.nupkg
 packages/*
 !packages/repositories.config
+.idea/
+
 .vs/

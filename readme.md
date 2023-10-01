@@ -1,3 +1,6 @@
+# Fork-Info
+This is a fork of the twin coders sqlite-net-extensions from bitbucket. It has been upgraded to be usable in dotnet maui.
+
 # SQLite-Net Extensions
 
 [SQLite-Net Extensions](https://bitbucket.org/twincoders/sqlite-net-extensions) is a very simple ORM that provides **one-to-one**, **one-to-many**, **many-to-one**, **many-to-many**, **inverse** and **text-blobbed** relationships on top of the [sqlite-net library](https://github.com/praeclarum/sqlite-net).
@@ -108,10 +111,10 @@ Here's how we'll create, read and update the entities:
     db.CreateTable<Stock>();
     db.CreateTable<Valuation>();
 
-    var dollar = new Stock() {
-        Symbol = "$"
+    var euro = new Stock() {
+        Symbol = "€"
     };
-    db.Insert(dollar);   // Insert the object in the database
+    db.Insert(euro);   // Insert the object in the database
 
     var valuation = new Valuation() {
         Price = 15,
@@ -122,14 +125,14 @@ Here's how we'll create, read and update the entities:
     // Objects created, let's stablish the relationship
     euro.Valuations = new List<Valuation> { valuation };
 
-    db.UpdateWithChildren(dollar);   // Update the changes into the database
-    if (valuation.Stock == dollar) {
+    db.UpdateWithChildren(euro);   // Update the changes into the database
+    if (valuation.Stock == euro) {
         Debug.WriteLine("Inverse relationship already set, yay!");
     }
 
     // Get the object and the relationships
     var storedValuation = db.GetWithChildren<Valuation>(valuation.Id);
-    if (dollar.Symbol.Equals(storedValuation.Stock.Symbol)) {
+    if (euro.Symbol.Equals(storedValuation.Stock.Symbol)) {
         Debug.WriteLine("Object and relationships loaded correctly!");
     }
 
@@ -284,7 +287,7 @@ Example:
         public string Name { get; set; }
 
         [ManyToMany(typeof(StudentSubject))]
-        public List<Subject> Subjects { get; set; } 
+        public List<Student> Students { get; set; } 
     }
 
     public class Subject
@@ -295,7 +298,7 @@ Example:
         public string Description { get; set; }
 
         [ManyToMany(typeof(StudentSubject))]
-        public List<Student> Students { get; set; } 
+        public List<Subject> Subjects { get; set; } 
     }
 
     public class StudentSubject
@@ -383,21 +386,6 @@ Example:
     }
 
     
-
-### Asynchronous operations
-When using SQLite.Net Async package, you can use _async_ version of all SQLite-Net Extensions methods. All asynchronous methods perform the same operation of their synchronous counterparts, but they have the `Async` suffix to differenciate them.
-
-Asynchronous operations require you to use an instance of [`SQLiteAsyncConnection`](https://github.com/oysteinkrog/SQLite.Net-PCL#sqliteasyncconnection) instead of a regular `SQLiteConnection`.
-
-Relationship properties and foreign keys are declared the same way and they can be used by both async and regular connections without changes.
-
-Synchronous example:
-
-    conn.InsertWithChildren(customer);
-    
-Asynchronous equivalent:
-
-    await conn.InsertWithChildrenAsync(customer);
 
 ### Cascade operations
 

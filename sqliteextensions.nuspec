@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+
+<package>
+    <metadata>
+        <id>SQLiteNetExtensions.Core</id>
+        <!-- 
+        The build system will automatically:
+          - Set the version number to match the binaries.
+          - Set the minimum NuGet client version required.
+        -->
+        <version>1.0.1-alpha</version>
+        <authors>Madhav Shenoy</authors>
+        <owners>TwinCoders S.L.</owners>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>Sqlite Net Extensions usable for dotnet.</description>
+        <releaseNotes></releaseNotes>
+        <copyright>Copyright (C) 2013 TwinCoders S.L.</copyright>
+        <tags>sqlite, sqlite extensions, dotnet</tags>
+        <dependencies>
+            <dependency id="Newtonsoft.Json" version="13.0.3"/>
+            <dependency id="sqlite-net-pcl" version="1.8.116" />
+            <dependency id="SQLitePCLRaw.bundle_green" version="2.1.6"/>
+        </dependencies>
+    </metadata>
+</package>
