@@ -5,15 +5,8 @@ using System.Linq;
 using System.Reflection;
 using SQLiteNetExtensions.Attributes;
 using System.Linq.Expressions;
-
-#if USING_MVVMCROSS
-using Cirrious.MvvmCross.Community.Plugins.Sqlite;
-#elif PCL
-using SQLite.Net;
-using SQLite.Net.Attributes;
-#else
+using System.Collections.ObjectModel;
 using SQLite;
-#endif
 
 namespace SQLiteNetExtensions.Extensions
 {
@@ -21,7 +14,8 @@ namespace SQLiteNetExtensions.Extensions
     {
         None,
         Array,
-        List
+        List,
+        ObservableCollection
     }
 
     public class ManyToManyMetaInfo
@@ -35,7 +29,7 @@ namespace SQLiteNetExtensions.Extensions
     {
         public static T GetAttribute<T>(this Type type) where T : Attribute  {
             T attribute = null;
-            var attributes = (T[])type.GetCustomAttributes(typeof(T), true);
+            var attributes = (T[])type.GetTypeInfo().GetCustomAttributes(typeof(T), true);
             if (attributes.Length > 0)
             {
                 attribute = attributes[0];
@@ -59,29 +53,35 @@ namespace SQLiteNetExtensions.Extensions
             var type = property.PropertyType;
             enclosedType = EnclosedType.None;
 
+            var typeInfo = type.GetTypeInfo();
             if (type.IsArray)
             {
                 type = type.GetElementType();
                 enclosedType = EnclosedType.Array;
             }
-            else if (type.IsGenericType && typeof(List<>).IsAssignableFrom(type.GetGenericTypeDefinition()))
+            else if (typeInfo.IsGenericType && typeof(List<>).GetTypeInfo().IsAssignableFrom(type.GetGenericTypeDefinition().GetTypeInfo()))
             {
-                type = type.GetGenericArguments()[0];
+                type = typeInfo.GenericTypeArguments[0];
                 enclosedType = EnclosedType.List;
+            }
+            else if (typeInfo.IsGenericType && typeof(ObservableCollection<>).GetTypeInfo().IsAssignableFrom(type.GetTypeInfo().GetGenericTypeDefinition().GetTypeInfo()))
+            {
+                type = typeInfo.GenericTypeArguments[0];
+                enclosedType = EnclosedType.ObservableCollection;
             }
             return type;
         }
 
         public static object GetDefault(this Type type)
         {
-            return type.IsValueType ? Activator.CreateInstance(type) : null;
+            return type.GetTypeInfo().IsValueType ? Activator.CreateInstance(type) : null;
         }
 
         private static PropertyInfo GetExplicitForeignKeyProperty(this Type type, Type destinationType)
         {
-            return (from property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            return (from property in type.GetRuntimeProperties() where property.IsPublicInstance()
                     let foreignKeyAttribute = property.GetAttribute<ForeignKeyAttribute>()
-                    where foreignKeyAttribute != null && foreignKeyAttribute.ForeignType.IsAssignableFrom(destinationType)
+                    where foreignKeyAttribute != null && foreignKeyAttribute.ForeignType.GetTypeInfo().IsAssignableFrom(destinationType.GetTypeInfo())
                     select property)
                         .FirstOrDefault();
         }
@@ -93,8 +93,8 @@ namespace SQLiteNetExtensions.Extensions
             var conventionNames = conventionFormats.Select(format => string.Format(format, destinationTypeName)).ToList();
 
             // No explicit declaration, search for convention names
-            return (from property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                    where conventionNames.Contains(property.Name, StringComparer.OrdinalIgnoreCase)
+            return (from property in type.GetRuntimeProperties()
+                    where property.IsPublicInstance() && conventionNames.Contains(property.Name, StringComparer.OrdinalIgnoreCase)
                     select property)
                         .FirstOrDefault();
         }
@@ -121,22 +121,22 @@ namespace SQLiteNetExtensions.Extensions
             if (!inverse && !string.IsNullOrEmpty(attribute.ForeignKey))
             {
                 // Explicitly declared foreign key name
-                result = originType.GetProperty(attribute.ForeignKey);
+                result = originType.GetRuntimeProperty(attribute.ForeignKey);
             }
             else if (!inverse && inverseAttribute != null && !string.IsNullOrEmpty(inverseAttribute.InverseForeignKey))
             {
                 // Explicitly declared inverse foreign key name in inverse property (double inverse refers to current entity foreign key)
-                result = originType.GetProperty(inverseAttribute.InverseForeignKey);
+                result = originType.GetRuntimeProperty(inverseAttribute.InverseForeignKey);
             }
             else if (inverse && !string.IsNullOrEmpty(attribute.InverseForeignKey))
             {
                 // Explicitly declared inverse foreign key name
-                result = originType.GetProperty(attribute.InverseForeignKey);
+                result = originType.GetRuntimeProperty(attribute.InverseForeignKey);
             }
             else if (inverse && inverseAttribute != null && !string.IsNullOrEmpty(inverseAttribute.ForeignKey))
             {
                 // Explicitly declared foreign key name in inverse property
-                result = originType.GetProperty(inverseAttribute.ForeignKey);
+                result = originType.GetRuntimeProperty(inverseAttribute.ForeignKey);
             }
             else
             {
@@ -165,17 +165,17 @@ namespace SQLiteNetExtensions.Extensions
             PropertyInfo result = null;
             if (attribute.InverseProperty != null)
             {
-                result = propertyType.GetProperty(attribute.InverseProperty);
+                result = propertyType.GetRuntimeProperty(attribute.InverseProperty);
             }
             else
             {
-                var properties = propertyType.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+                var properties = (from p in propertyType.GetRuntimeProperties() where p.IsPublicInstance() select p);
                 foreach (var inverseProperty in properties)
                 {
                     var inverseAttribute = inverseProperty.GetAttribute<RelationshipAttribute>();
                     EnclosedType enclosedInverseType;
                     var inverseType = inverseProperty.GetEntityType(out enclosedInverseType);
-                    if (inverseAttribute != null && elementType.IsAssignableFrom(inverseType))
+                    if (inverseAttribute != null && inverseType.GetTypeInfo().Equals(elementType.GetTypeInfo()))
                     {
                         result = inverseProperty;
                         break;
@@ -192,7 +192,7 @@ namespace SQLiteNetExtensions.Extensions
             Debug.Assert(body != null, "Expression should be a property member expression");
 
             var propertyName = body.Member.Name;
-            return type.GetProperty(propertyName);
+            return type.GetRuntimeProperty(propertyName);
         }
 
         public static ManyToManyMetaInfo GetManyToManyMetaInfo(this Type type, PropertyInfo relationship)
@@ -214,15 +214,15 @@ namespace SQLiteNetExtensions.Extensions
 
         public static List<PropertyInfo> GetRelationshipProperties(this Type type)
         {
-            return (from property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                    where property.GetAttribute<RelationshipAttribute>() != null
-                    select property).ToList();
+            return (from property in type.GetRuntimeProperties()
+                where property.IsPublicInstance() && property.GetAttribute<RelationshipAttribute>() != null
+                select property).ToList();
         } 
 
         public static PropertyInfo GetPrimaryKey(this Type type)
         {
-            return (from property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                    where property.GetAttribute<PrimaryKeyAttribute>() != null
+            return (from property in type.GetRuntimeProperties()
+                    where property.IsPublicInstance() && property.GetAttribute<PrimaryKeyAttribute>() != null
                     select property).FirstOrDefault();
         }
 
@@ -244,7 +244,12 @@ namespace SQLiteNetExtensions.Extensions
             return column;
         }
 
+        // Equivalent to old GetProperties(BindingFlags.Public | BindingFlags.Instance)
+        private static bool IsPublicInstance(this PropertyInfo propertyInfo)
+        {
+            return propertyInfo != null &&
+                   ((propertyInfo.GetMethod != null && !propertyInfo.GetMethod.IsStatic && propertyInfo.GetMethod.IsPublic) &&
+                   (propertyInfo.SetMethod != null && !propertyInfo.SetMethod.IsStatic && propertyInfo.SetMethod.IsPublic));
+        }
     }
-
-    
 }

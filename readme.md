@@ -22,15 +22,25 @@ Complementarily `UpdateWithChildren` looks at the relationships that you have se
 You can update foreign keys manually if you feel more comfortable handling some relationships by yourself and let the SQLite-Net extensions handle the rest for you. You can even add or remove SQLite-Net extensions of any project at any time without changes to your database.
 
 ## Installation
+The easiest way of installing the library in your project is adding a reference to [_SQLiteNetExtensions_ NuGet package](https://www.nuget.org/packages/SQLiteNetExtensions/) or [_SQLiteNetExtensions.Async_ NuGet package](https://www.nuget.org/packages/SQLiteNetExtensions.Async/) for asynchronous operations.
+
 SQLite-Net Extensions is provided in three different flavours, depending on the SQLite-Net version that you are using:
 
 - [SQLite-Net PCL](https://github.com/oysteinkrog/SQLite.Net-PCL) version (also as [NuGet package](https://www.nuget.org/packages/SQLite.Net-PCL/))
+- [SQLite.Net.Async-PCL](https://github.com/oysteinkrog/SQLite.Net-PCL) version (also as [NuGet package](https://www.nuget.org/packages/SQLite.Net.Async-PCL/))
 - [MvvmCross SQLite Community](https://github.com/MvvmCross/MvvmCross-SQLite PCL) version (also as [NuGet package](https://www.nuget.org/packages/MvvmCross.Community.Plugin.Sqlite/))
 - [SQLite-Net standard](https://github.com/praeclarum/sqlite-net) version (also as [NuGet package](https://www.nuget.org/packages/sqlite-net))
 
-Currently the recommended version is the official SQLite-Net PCL NuGet package. If you are using this SQLite-Net version, you can simply add a reference to the pre-compiled DLL that can be found in the [Downloads page](https://bitbucket.org/twincoders/sqlite-net-extensions/downloads).
+Currently the recommended version is the official SQLite-Net PCL NuGet package. If you are using this SQLite-Net version, you can simply add a reference to [_SQLiteNetExtensions_ NuGet package](https://www.nuget.org/packages/SQLiteNetExtensions/). Also available with Async support in [_SQLiteNetExtensions.Async_ NuGet package](https://www.nuget.org/packages/SQLiteNetExtensions.Async/).
 
-Otherwise, you can compile the sources by yourself and add the reference to your newly compiled DLL or add SQLite-Net Extensions project as a dependency to your code.
+There's also [a PCL NuGet package](https://www.nuget.org/packages/SQLiteNetExtensions-MvvmCross/) for users of MvvmCross SQLite Community plugin.
+
+Otherwise, you can download and compile the sources by yourself and add the reference to your newly compiled DLL or add SQLite-Net Extensions project as a dependency to your code.
+
+## Get help
+The best way to get help is searching [StackOverflow](http://stackoverflow.com) for already existing answers of your problem or asking your own question and tagging it with [`sqlite-net-extensions` tag](http://stackoverflow.com/questions/tagged/sqlite-net-extensions).
+
+If you find a bug or have a suggestion or feature request. Feel free to create a new ticket in the [issue tracker](https://bitbucket.org/twincoders/sqlite-net-extensions/issues?status=new&status=open) if it doesn't already exist.
 
 
 ## Some code
@@ -141,20 +151,20 @@ The complexity of the sample can be reduced using recursive operations, that are
         Time = DateTime.Now,
     };
 
-    var euro = new Stock {
-        Symbol = "€",
+    var dollar = new Stock {
+        Symbol = "$",
         Valuations = new List<Valuation> { valuation }
     };
 
-    db.InsertWithChildren(euro);   // Insert the object in the database
+    db.InsertWithChildren(dollar);   // Insert the object in the database
 
-    if (valuation.Stock == euro) {
+    if (valuation.Stock == dollar) {
         Debug.WriteLine("Inverse relationship already set, yay!");
     }
 
     // Get the object and the relationships
     var storedValuation = db.GetWithChildren<Valuation>(valuation.Id);
-    if (euro.Symbol.Equals(storedValuation.Stock.Symbol)) {
+    if (dollar.Symbol.Equals(storedValuation.Stock.Symbol)) {
         Debug.WriteLine("Object and relationships loaded correctly!");
     }
     
