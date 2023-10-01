@@ -1,4 +1,4 @@
-name : Deploy Place My Order DynamoDb Library
+name : Deploy SqLiteNetExtensions Core
 
 on:
   push:
