@@ -5,3 +5,4 @@
 *.userprefs
 packages/*
 !packages/repositories.config
+.idea/
